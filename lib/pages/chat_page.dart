@@ -130,7 +130,7 @@ class _ChatPageState extends State<ChatPage> {
               SafeArea(
                 top: false,
                 child: Padding(
-                  padding: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.all(14),
                   child: Row(
                     children: [
                       Expanded(
@@ -143,7 +143,7 @@ class _ChatPageState extends State<ChatPage> {
                           decoration: InputDecoration(
                             hintText: 'Type a reply…',
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(24)),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                           ),
                         ),
                       ),
@@ -158,6 +158,8 @@ class _ChatPageState extends State<ChatPage> {
                               ),
                             )
                           : IconButton.filled(
+                              iconSize: 28,
+                              padding: const EdgeInsets.all(14),
                               icon: const Icon(Icons.send),
                               onPressed: () => _send(messages),
                             ),

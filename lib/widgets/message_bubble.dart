@@ -22,10 +22,10 @@ class MessageBubble extends StatelessWidget {
     return Align(
       alignment: fromCustomer ? Alignment.centerLeft : Alignment.centerRight,
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
         constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.75,
+          maxWidth: MediaQuery.of(context).size.width * 0.8,
         ),
         decoration: BoxDecoration(
           color: bg,
@@ -40,8 +40,8 @@ class MessageBubble extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.end,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(text, style: TextStyle(color: fg)),
-            const SizedBox(height: 4),
+            Text(text, style: TextStyle(color: fg, fontSize: 16)),
+            const SizedBox(height: 6),
             Text(
               DateFormat('h:mm a').format(time.toLocal()),
               style: TextStyle(fontSize: 11, color: fg.withValues(alpha: 0.6)),

@@ -129,15 +129,14 @@ class _ConversationsListPageState extends State<ConversationsListPage> {
                 hintText: 'Search by number',
                 prefixIcon: const Icon(Icons.search),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(24)),
-                isDense: true,
-                contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                contentPadding: const EdgeInsets.symmetric(vertical: 16),
               ),
             ),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
             child: SizedBox(
-              height: 36,
+              height: 48,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 itemCount: _kTabs.length,
@@ -189,7 +188,9 @@ class _ConversationsListPageState extends State<ConversationsListPage> {
                           onLongPress: () => _showLabelSheet(s.sender, label),
                           onSecondaryTap: () => _showLabelSheet(s.sender, label),
                           child: ListTile(
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                             leading: CircleAvatar(
+                              radius: 28,
                               backgroundColor: label != null ? _labelColor(label) : null,
                               child: Text(
                                 s.sender.isNotEmpty ? s.sender.substring(s.sender.length - 2) : '?',

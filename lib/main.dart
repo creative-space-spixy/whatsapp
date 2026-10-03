@@ -56,7 +56,17 @@ class _MyAppState extends State<MyApp> {
       theme: ThemeData(
         colorSchemeSeed: const Color(0xFFFF7A59),
         useMaterial3: true,
+        visualDensity: VisualDensity.comfortable,
       ),
+      // App-wide size bump: scales every Text (and anything sized in em-like
+      // terms) by 30% on top of the user's own system font setting.
+      builder: (context, child) {
+        final mq = MediaQuery.of(context);
+        return MediaQuery(
+          data: mq.copyWith(textScaler: TextScaler.linear(mq.textScaler.scale(1) * 1.2)),
+          child: child!,
+        );
+      },
       home: _session == null ? const AuthPage() : const ConversationsListPage(),
     );
   }
