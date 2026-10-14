@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../models/conversation_message.dart';
 import '../services/conversations_service.dart';
@@ -20,6 +22,12 @@ class _ChatPageState extends State<ChatPage> {
   late final Stream<List<ConversationMessage>> _stream;
 
   bool _sending = false;
+
+  // On web, defaultTargetPlatform reflects the visitor's OS, so a phone
+  // browser reports android/iOS.
+  bool get _isTouchPlatform =>
+      defaultTargetPlatform == TargetPlatform.android ||
+      defaultTargetPlatform == TargetPlatform.iOS;
 
   @override
   void initState() {
@@ -52,7 +60,9 @@ class _ChatPageState extends State<ChatPage> {
     // inserts a fresh row instead.
     final pending = currentMessages.where((m) => !m.isAnswered).toList();
     final replyTo = pending.isEmpty ? null : pending.last;
-    final threadId = currentMessages.isEmpty ? null : currentMessages.last.threadId;
+    final threadId = currentMessages.isEmpty
+        ? null
+        : currentMessages.last.threadId;
 
     try {
       await _service.sendReply(
@@ -64,14 +74,17 @@ class _ChatPageState extends State<ChatPage> {
       _textController.clear();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Message sent'), duration: Duration(seconds: 2)),
+          const SnackBar(
+            content: Text('Message sent'),
+            duration: Duration(seconds: 2),
+          ),
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to send: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to send: $e')));
       }
     } finally {
       if (mounted) setState(() => _sending = false);
@@ -81,7 +94,7 @@ class _ChatPageState extends State<ChatPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(widget.sender)),
+      appBar: AppBar(title: SelectionArea(child: Text(widget.sender))),
       body: StreamBuilder<List<ConversationMessage>>(
         stream: _stream,
         builder: (context, snapshot) {
@@ -92,39 +105,46 @@ class _ChatPageState extends State<ChatPage> {
             return const Center(child: CircularProgressIndicator());
           }
 
-          final messages = snapshot.data!
-              .where((m) => m.sender == widget.sender)
-              .toList()
-            ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+          final messages =
+              snapshot.data!.where((m) => m.sender == widget.sender).toList()
+                ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
 
           _scrollToBottom();
 
           return Column(
             children: [
               Expanded(
-                child: ListView.builder(
-                  controller: _scrollController,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  itemCount: messages.length,
-                  itemBuilder: (context, index) {
-                    final m = messages[index];
-                    final bubbles = <Widget>[];
-                    if (m.message != null && m.message!.trim().isNotEmpty) {
-                      bubbles.add(MessageBubble(
-                        text: m.message!,
-                        time: m.createdAt,
-                        fromCustomer: true,
-                      ));
-                    }
-                    if (m.isAnswered) {
-                      bubbles.add(MessageBubble(
-                        text: m.response!,
-                        time: m.createdAt,
-                        fromCustomer: false,
-                      ));
-                    }
-                    return Column(children: bubbles);
-                  },
+                // SelectionArea makes the bubble text selectable/copyable
+                // (Flutter web draws to a canvas, so the browser can't do it).
+                child: SelectionArea(
+                  child: ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    itemCount: messages.length,
+                    itemBuilder: (context, index) {
+                      final m = messages[index];
+                      final bubbles = <Widget>[];
+                      if (m.message != null && m.message!.trim().isNotEmpty) {
+                        bubbles.add(
+                          MessageBubble(
+                            text: m.message!,
+                            time: m.createdAt,
+                            fromCustomer: true,
+                          ),
+                        );
+                      }
+                      if (m.isAnswered) {
+                        bubbles.add(
+                          MessageBubble(
+                            text: m.response!,
+                            time: m.createdAt,
+                            fromCustomer: false,
+                          ),
+                        );
+                      }
+                      return Column(children: bubbles);
+                    },
+                  ),
                 ),
               ),
               SafeArea(
@@ -134,16 +154,36 @@ class _ChatPageState extends State<ChatPage> {
                   child: Row(
                     children: [
                       Expanded(
-                        child: TextField(
-                          controller: _textController,
-                          minLines: 1,
-                          maxLines: 4,
-                          textInputAction: TextInputAction.send,
-                          onSubmitted: (_) => _send(messages),
-                          decoration: InputDecoration(
-                            hintText: 'Type a reply…',
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(24)),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                        // Enter inserts a new line (multi-line messages); the
+                        // send button, or Ctrl+Enter, sends.
+                        child: CallbackShortcuts(
+                          bindings: {
+                            const SingleActivator(
+                              LogicalKeyboardKey.enter,
+                              control: true,
+                            ): () =>
+                                _send(messages),
+                          },
+                          child: TextField(
+                            controller: _textController,
+                            minLines: 1,
+                            maxLines: 6,
+                            keyboardType: TextInputType.multiline,
+                            textInputAction: TextInputAction.newline,
+                            decoration: InputDecoration(
+                              // Ctrl+Enter only exists with a hardware keyboard,
+                              // so don't advertise it on phones/tablets.
+                              hintText: _isTouchPlatform
+                                  ? 'Type a reply…'
+                                  : 'Type a reply… (Enter = new line, Ctrl+Enter = send)',
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(24),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 16,
+                              ),
+                            ),
                           ),
                         ),
                       ),
@@ -154,7 +194,9 @@ class _ChatPageState extends State<ChatPage> {
                               child: SizedBox(
                                 width: 20,
                                 height: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               ),
                             )
                           : IconButton.filled(
